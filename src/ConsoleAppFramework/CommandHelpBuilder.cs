@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
@@ -204,7 +205,9 @@ namespace ConsoleAppFramework
         public string BuildMethodListMessage(IEnumerable<Type> types)
         {
             return BuildMethodListMessage(types
-                .SelectMany(xs => xs.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly).Select(x => CreateCommandHelpDefinition(x))));
+                .SelectMany(xs => xs.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                .Where(m => m.GetCustomAttribute<CompilerGeneratedAttribute>() == null)
+                .Select(x => CreateCommandHelpDefinition(x))));
         }
 
         public string BuildMethodListMessage(IEnumerable<CommandHelpDefinition> commandHelpDefinitions)

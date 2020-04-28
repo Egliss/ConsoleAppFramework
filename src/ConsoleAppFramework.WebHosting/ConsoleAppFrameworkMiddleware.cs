@@ -2,8 +2,10 @@
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -175,10 +177,13 @@ namespace ConsoleAppFramework.WebHosting
         static Dictionary<string, MethodInfo> BuildMethodLookup(IEnumerable<Type> consoleAppTypes)
         {
             var methods = new Dictionary<string, MethodInfo>();
-
+            
             foreach (var type in consoleAppTypes)
             {
-                foreach (var item in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+                var infos = type
+                    .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                    .Where(m => m.GetCustomAttribute<CompilerGeneratedAttribute>() == null);
+                foreach (var item in infos)
                 {
                     methods.Add("/" + type.Name + "/" + item.Name, item);
                 }

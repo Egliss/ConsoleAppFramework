@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace ConsoleAppFramework.WebHosting
@@ -18,7 +19,10 @@ namespace ConsoleAppFramework.WebHosting
         public ConsoleAppFrameworkSwaggerMiddleware(RequestDelegate next, TargetConsoleAppTypeCollection targetTypes, SwaggerOptions options)
         {
             this.next = next;
-            this.handlers = targetTypes.SelectMany(x => x.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)).ToArray();
+            this.handlers = targetTypes
+                .SelectMany(x => x.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+                .Where(m => m.GetCustomAttribute<CompilerGeneratedAttribute>() == null)
+                .ToArray();
             this.options = options;
         }
 

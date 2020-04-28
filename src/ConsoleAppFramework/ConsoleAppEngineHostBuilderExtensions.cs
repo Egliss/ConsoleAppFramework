@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace ConsoleAppFramework
@@ -136,7 +137,9 @@ namespace ConsoleAppFramework
 
             searchAssemblies ??= AppDomain.CurrentDomain.GetAssemblies();
 
-            var methods = typeof(T).GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            var methods = typeof(T).GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                .Where(m => m.GetCustomAttribute<CompilerGeneratedAttribute>() == null)
+                .ToArray();
             var defaultMethod = methods.FirstOrDefault(x => x.GetCustomAttribute<CommandAttribute>() == null);
             var hasHelp = methods.Any(x => x.GetCustomAttribute<CommandAttribute>()?.EqualsAny(HelpCommand) ?? false);
             var hasVersion = methods.Any(x => x.GetCustomAttribute<CommandAttribute>()?.EqualsAny(VersionCommand) ?? false);
@@ -304,8 +307,9 @@ namespace ConsoleAppFramework
             foreach (var baseType in consoleAppBaseTypes)
             {
                 bool isFound = false;
-                foreach (var (method, cmdattr) in baseType.GetMethods().
-                    Select(m => (MethodInfo: m, Attr: m.GetCustomAttribute<CommandAttribute>())).Where(x => x.Attr != null))
+                foreach (var (method, cmdattr) in baseType.GetMethods()
+                    .Where(m => m.GetCustomAttribute<CompilerGeneratedAttribute>() == null)
+                    .Select(m => (MethodInfo: m, Attr: m.GetCustomAttribute<CommandAttribute>())).Where(x => x.Attr != null))
                 {
                     if (cmdattr.CommandNames.Any(x => TrimEquals(arg0, x)))
                     {
