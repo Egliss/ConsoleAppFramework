@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -51,7 +52,9 @@ namespace ConsoleAppFramework
                     return;
                 }
 
-                var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+                var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                    .Where(m=>m.GetCustomAttribute<CompilerGeneratedAttribute>() == null)
+                    .ToArray();
                 if (methods.Length == 0)
                 {
                     await SetFailAsync(ctx, "Method can not select. T of Run/UseConsoleAppEngine<T> have to be contain single method or command. Type:" + type.FullName);
