@@ -76,6 +76,7 @@ namespace ConsoleAppFramework.WebHosting.Swagger
 
                 foreach (var item in handlers)
                 {
+                    var commandAttribute = item.GetCustomAttribute<CommandAttribute>();
                     // MemberInfo.DeclaringType is null only if it is a member of a VB Module.
                     string declaringTypeName = item.DeclaringType!.Name;
                     XmlCommentStructure? xmlComment = null;
@@ -86,11 +87,23 @@ namespace ConsoleAppFramework.WebHosting.Swagger
                     }
 
                     var parameters = BuildParameters(doc.definitions, xmlComment, item);
+                    var description = (xmlComment != null)
+                        ? xmlComment.Remarks
+                        : (commandAttribute != null)
+                            ? commandAttribute.Description
+                            : string.Empty;
+
+                    var summary = (xmlComment != null)
+                        ? xmlComment.Remarks
+                        : (commandAttribute != null)
+                            ? string.Join(',', commandAttribute.CommandNames)
+                            : string.Empty;
+
                     var operation = new Operation
                     {
                         tags = new[] { declaringTypeName },
-                        summary = (xmlComment != null) ? xmlComment.Summary : "",
-                        description = (xmlComment != null) ? xmlComment.Remarks : "",
+                        summary = summary,
+                        description = description,
                         parameters = parameters,
                         responses = new Dictionary<string, Response>
                         {
@@ -120,12 +133,24 @@ namespace ConsoleAppFramework.WebHosting.Swagger
             var parameters = parameterInfos
                 .Select(x =>
                 {
+                    var commandAttribute = x.GetCustomAttribute<OptionAttribute>();
+                    var parameterName = x.Name;
+
+                    if (commandAttribute != null)
+                    {
+                        parameterName += " " + commandAttribute.ShortName;
+                    }
+
                     var parameterXmlComment = UnwrapTypeName(x.ParameterType);
                     if (xmlComment != null)
                     {
                         // Name is null only if Parameter is ReturnParameter.
                         xmlComment.Parameters.TryGetValue(x.Name!, out parameterXmlComment!);
-                        parameterXmlComment = UnwrapTypeName(x.ParameterType) + " " + parameterXmlComment;
+                        parameterXmlComment += " " + parameterXmlComment;
+                    }
+                    else if (commandAttribute != null)
+                    {
+                        parameterXmlComment += " " + commandAttribute.Description;
                     }
 
                     var defaultValue = x.DefaultValue;
@@ -178,7 +203,7 @@ namespace ConsoleAppFramework.WebHosting.Swagger
 
                     return new Schemas.Parameter
                     {
-                        name = x.Name,
+                        name = parameterName,
                         @in = "formData",
                         type = swaggerDataType,
                         description = parameterXmlComment,
